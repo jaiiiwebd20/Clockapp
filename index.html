@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Clock">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <title>Clock</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0b1220;--panel:#131e30;--panel2:#1b2940;--line:#2b3a52;--text:#f3f6fb;--muted:#aab7ca;--accent:#f59e0b;--danger:#fb7185;--ok:#34d399}
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(160deg,#111c30,#080d17 65%);color:var(--text);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+    main{max-width:720px;margin:auto;padding:calc(24px + env(safe-area-inset-top)) 18px calc(28px + env(safe-area-inset-bottom))}
+    header{display:flex;align-items:center;gap:14px;margin:8px 0 28px}.logo{width:52px;height:52px;border-radius:17px;background:#263751;display:grid;place-items:center;font-size:26px}
+    #home{min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative}
+    .clock-face{font-size:clamp(64px,17vw,104px);font-weight:300;letter-spacing:-5px;font-variant-numeric:tabular-nums;line-height:1.1;text-shadow:0 8px 35px #0008}
+    .clock-date{margin-top:14px;color:var(--muted);font-size:16px;letter-spacing:1px}
+    .menu-tap{margin-top:54px;width:58px;height:58px;border-radius:19px;background:#1b2940;border:1px solid #3a4b65;color:#f3f6fb;font-size:24px;display:grid;place-items:center;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+    .menu-hint{min-height:20px;margin-top:12px;color:#8290a5;font-size:11px}
+    h1{font-size:23px;margin:0 0 3px}.sub{color:var(--muted);font-size:13px}.pill{margin-left:auto;border:1px solid #27644e;color:#7ce0b5;border-radius:999px;padding:6px 10px;font-size:11px;white-space:nowrap}
+    .card{background:rgba(19,30,48,.94);border:1px solid var(--line);border-radius:22px;padding:20px;margin:14px 0;box-shadow:0 12px 35px #0003}
+    h2{font-size:18px;margin:0 0 8px}.muted{color:var(--muted);font-size:13px;line-height:1.5}
+    input[type=password],input[type=text]{width:100%;padding:15px 14px;border:1px solid var(--line);border-radius:13px;background:#0c1524;color:var(--text);font-size:16px;outline:none;margin:12px 0}
+    button,.filebtn{border:0;border-radius:13px;padding:14px 16px;background:var(--accent);color:#1c1608;font-weight:700;font-size:15px;cursor:pointer;display:inline-flex;justify-content:center;align-items:center;gap:8px}
+    button.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}button.danger{background:#4b202d;color:#ffc1ca;border:1px solid #7b3446}
+    button:disabled{opacity:.45;cursor:not-allowed}.full{width:100%}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1}
+    .hidden{display:none!important}.notice{padding:12px 14px;border-radius:13px;background:#332b18;color:#f7d99b;font-size:12px;line-height:1.5;margin-top:12px}
+    .status{font-size:12px;color:var(--muted);margin-top:12px;min-height:18px}.filelist{display:grid;gap:9px;margin-top:14px}
+    .file{display:flex;align-items:center;gap:12px;background:#0d1727;border:1px solid var(--line);padding:12px;border-radius:14px}
+    .fileicon{font-size:23px}.filename{font-size:14px;overflow-wrap:anywhere}.filesub{font-size:11px;color:var(--muted);margin-top:3px}.fileinfo{min-width:0;flex:1}
+    .file button{padding:9px 11px;font-size:12px}.small{font-size:11px;color:var(--muted);line-height:1.5}
+    footer{text-align:center;color:#8290a5;font-size:11px;padding:16px}
+    @media(min-width:600px){main{padding-top:42px}.card{padding:24px}}
+  </style>
+</head>
+<body>
+<main>
+  <header id="appHeader" class="hidden">
+    <div class="logo">◷</div>
+    <div><h1>Clock</h1><div class="sub">Your files. Encrypted on this device.</div></div>
+    <div class="pill">OFFLINE VAULT</div>
+  </header>
+
+  <section id="home">
+    <div class="clock-face" id="clockTime">--:--</div>
+    <div class="clock-date" id="clockDate">Loading date…</div>
+    <button id="menuTap" class="menu-tap" aria-label="Menu">☰</button>
+    <div id="menuHint" class="menu-hint"> </div>
+  </section>
+
+  <section id="setup" class="card hidden">
+    <h2>Create your vault</h2>
+    <p class="muted">Choose a strong password. It encrypts your files and is never sent anywhere.</p>
+    <input id="newPassword" type="password" autocomplete="new-password" placeholder="Create password (12+ characters)">
+    <input id="confirmPassword" type="password" autocomplete="new-password" placeholder="Confirm password">
+    <button id="createBtn" class="full">Create encrypted vault</button>
+    <div class="notice">There is no password reset. If you forget this password, your encrypted files cannot be recovered. Save it securely before importing files.</div>
+    <div id="setupStatus" class="status" role="status"></div>
+  </section>
+
+  <section id="unlock" class="card hidden">
+    <h2>Unlock your vault</h2>
+    <p class="muted">Enter your vault password to decrypt your private file list.</p>
+    <input id="password" type="password" autocomplete="current-password" placeholder="Vault password">
+    <button id="unlockBtn" class="full">Unlock</button>
+    <div id="unlockStatus" class="status" role="status"></div>
+  </section>
+
+  <section id="vault" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <div><h2>Your private space</h2><div class="muted" id="count">0 encrypted files</div></div>
+        <button id="lockBtn" class="secondary">Lock</button>
+      </div>
+      <div class="row" style="margin-top:18px">
+        <label class="filebtn full" for="fileInput">＋ Add photos / videos / audio</label>
+        <input id="fileInput" class="hidden" type="file" multiple accept="image/*,video/*,audio/*">
+      </div>
+      <div id="fileStatus" class="status" role="status"></div>
+      <div class="notice">Import creates an encrypted copy inside this browser's local storage. It does not delete the original from Photos or Files. Verify the copy before deleting originals yourself.</div>
+    </div>
+    <div class="card">
+      <h2>Encrypted files</h2>
+      <div class="muted">Names and file contents are encrypted. Nothing is displayed until you unlock.</div>
+      <div id="fileList" class="filelist"></div>
+      <div id="empty" class="muted" style="padding:22px 0;text-align:center">No files yet. Add your first file above.</div>
+    </div>
+    <div class="card">
+      <h2>Privacy & storage</h2>
+      <p class="muted">This app has no accounts, analytics, ads, sync, upload, or server-side file handling. Your encrypted vault is stored in this browser on this iPhone.</p>
+      <div class="small">Important: iOS may clear website data, and browser storage is not equivalent to native app storage. Export an encrypted backup regularly and keep it somewhere safe. Never clear Safari website data unless you have a backup.</div>
+      <div class="row" style="margin-top:14px">
+        <button id="backupBtn" class="secondary">Export encrypted backup</button>
+        <label class="filebtn" for="restoreInput" style="background:#1b2940;color:#f3f6fb;border:1px solid #2b3a52">Import backup</label>
+        <input id="restoreInput" class="hidden" type="file" accept=".pvaultbackup,application/octet-stream">
+      </div>
+      <div id="backupStatus" class="status" role="status"></div>
+    </div>
+  </section>
+  <footer>Clock • Local encryption • No cloud account</footer>
+</main>
+<script src="./app.js"></script>
+</body>
+</html>
